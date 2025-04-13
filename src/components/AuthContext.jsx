@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import { auth } from '../firebase'; // Import auth from firebase.js
+import { auth } from '../firebase.js'; // Correct import from firebase.js
 import {
     createUserWithEmailAndPassword,
     signInWithEmailAndPassword,
@@ -17,7 +17,7 @@ export function useAuth() {
 
 export function AuthProvider({ children }) {
     const [currentUser, setCurrentUser] = useState(null);
-    const [loading, setLoading] = useState(true); // Loading state while checking auth
+    const [loading, setLoading] = useState(true);
 
     function signup(email, password) {
         return createUserWithEmailAndPassword(auth, email, password);
@@ -39,9 +39,9 @@ export function AuthProvider({ children }) {
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
             setCurrentUser(user);
-            setLoading(false); // Auth state is loaded
+            setLoading(false);
         });
-        return unsubscribe; // Unsubscribe on unmount
+        return unsubscribe;
     }, []);
 
     const value = {
@@ -50,12 +50,13 @@ export function AuthProvider({ children }) {
         login,
         logout,
         googleSignIn,
-        loading, // Expose loading state
+        loading,
+        userId: currentUser?.uid, // Added userId to context value
     };
 
     return (
         <AuthContext.Provider value={value}>
-            {!loading && children} {/* Render children only after auth state is loaded */}
+            {!loading && children}
         </AuthContext.Provider>
     );
 }

@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../AuthContext';
 
 function LoginForm() {
     const emailRef = useRef();
