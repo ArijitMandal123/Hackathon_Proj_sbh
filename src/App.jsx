@@ -6,6 +6,9 @@ import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import LandingPage from './pages/LandingPage'; // Import LandingPage
 import ProfileDetailsPage from './pages/ProfileDetailsPage';
+import HackathonListingsPage from './pages/HackathonListingsPage';
+import HackathonDetailsPage from './pages/HackathonDetailsPage';
+import AddHackathonPage from './pages/AddHackathonPage'; // Import AddHackathonPage
 import { useAuth } from './components/AuthContext';
 
 function App() {
@@ -26,7 +29,10 @@ function App() {
                 <nav className="bg-[#261FB3] p-4 text-white shadow-md">
                     <div className="container mx-auto flex justify-between items-center">
                         <Link to="/" className="text-xl font-bold">Hackathon Teammate Finder</Link>
-                        <div>
+                        <div className="flex items-center">
+                            <Link to="/hackathons" className="text-white hover:text-[#FBE4D6] font-medium mr-4 transition-colors duration-300">
+                                Hackathons
+                            </Link>
                             {currentUser ? ( // If user is logged in: Show profile actions and logout
                                 <>
                                     <Link to="/create-profile" className="bg-[#FBE4D6] text-[#0C0950] hover:bg-[#f5d5c3] font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mr-2 transition-colors duration-300">
@@ -49,6 +55,9 @@ function App() {
                     <Route path="/profile/:userId" element={<ProfileDetailsPage />} />
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/signup" element={<SignupPage />} />
+                    <Route path="/hackathons" element={<HackathonListingsPage />} />
+                    <Route path="/hackathon/:hackathonId" element={<HackathonDetailsPage />} />
+                    <Route path="/add-hackathon" element={currentUser ? <AddHackathonPage /> : <LandingPage />} />
                 </Routes>
             </div>
         </Router>
