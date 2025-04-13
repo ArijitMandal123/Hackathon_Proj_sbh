@@ -15,7 +15,10 @@ function HomePage() {
             try {
                 const profilesCollection = collection(db, 'users'); // Get reference to 'users' collection
                 const profilesSnapshot = await getDocs(profilesCollection); // Fetch all documents in the collection
-                const profilesList = profilesSnapshot.docs.map(doc => doc.data()); // Extract data from documents
+                const profilesList = profilesSnapshot.docs.map(doc => ({
+                    userId: doc.id,
+                    ...doc.data()
+                }));
                 setProfiles(profilesList);
             } catch (firebaseError) {
                 setError("Failed to fetch profiles: " + firebaseError.message);
@@ -42,8 +45,8 @@ function HomePage() {
                 <p>No profiles yet. Be the first to create one!</p>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {profiles.map((profile, index) => (
-                        <ProfileCard key={index} {...profile} />
+                    {profiles.map((profile) => (
+                        <ProfileCard key={profile.userId} {...profile} />
                     ))}
                 </div>
             )}

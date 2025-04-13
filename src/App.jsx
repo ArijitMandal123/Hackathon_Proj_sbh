@@ -5,6 +5,7 @@ import CreateProfilePage from './pages/CreateProfilePage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import LandingPage from './pages/LandingPage'; // Import LandingPage
+import ProfileDetailsPage from './pages/ProfileDetailsPage';
 import { useAuth } from './components/AuthContext';
 
 function App() {
@@ -46,6 +47,7 @@ function App() {
                 <Routes>
                     <Route path="/" element={currentUser ? <HomePage /> : <LandingPage />} /> {/* Conditionally render HomePage or LandingPage */}
                     <Route path="/create-profile" element={currentUser ? <CreateProfilePage /> : <LandingPage />} /> {/* Protect create-profile too */}
+                    <Route path="/profile/:userId" element={<ProfileDetailsPage />} />
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/signup" element={<SignupPage />} />
                 </Routes>
