@@ -8,6 +8,13 @@ function HackathonListingsPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [filter, setFilter] = useState('all'); // 'all', 'upcoming', 'ongoing', 'past'
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filterTags, setFilterTags] = useState([]);
+    const [newTag, setNewTag] = useState('');
+    const [filterLocation, setFilterLocation] = useState('');
+    const [filterIsVirtual, setFilterIsVirtual] = useState('');
+    const [sortBy, setSortBy] = useState('startDate');
+    const [sortOrder, setSortOrder] = useState('desc');
 
     useEffect(() => {
         async function fetchHackathons() {
@@ -30,24 +37,6 @@ function HackathonListingsPage() {
                     };
                 });
                 
-                // Apply client-side filtering if needed
-                if (filter !== 'all') {
-                    const now = new Date();
-                    hackathonList = hackathonList.filter(hackathon => {
-                        const startDate = new Date(hackathon.startDate);
-                        const endDate = new Date(hackathon.endDate);
-                        
-                        if (filter === 'upcoming') {
-                            return startDate > now;
-                        } else if (filter === 'ongoing') {
-                            return startDate <= now && endDate >= now;
-                        } else if (filter === 'past') {
-                            return endDate < now;
-                        }
-                        return true;
-                    });
-                }
-                
                 setHackathons(hackathonList);
             } catch (err) {
                 console.error("Error fetching hackathons:", err);
@@ -58,7 +47,27 @@ function HackathonListingsPage() {
         }
 
         fetchHackathons();
-    }, [filter]);
+    }, []);
+
+    const handleAddTag = () => {
+        if (newTag.trim() && !filterTags.includes(newTag.trim())) {
+            setFilterTags([...filterTags, newTag.trim()]);
+            setNewTag('');
+        }
+    };
+
+    const handleRemoveTag = (tagToRemove) => {
+        setFilterTags(filterTags.filter(tag => tag !== tagToRemove));
+    };
+
+    const handleSort = (field) => {
+        if (sortBy === field) {
+            setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortBy(field);
+            setSortOrder('asc');
+        }
+    };
 
     const formatDate = (dateString) => {
         try {
@@ -89,6 +98,71 @@ function HackathonListingsPage() {
         }
     };
 
+    const filteredAndSortedHackathons = hackathons
+        .filter(hackathon => {
+            // Filter by status (all, upcoming, ongoing, past)
+            const now = new Date();
+            const startDate = new Date(hackathon.startDate);
+            const endDate = new Date(hackathon.endDate);
+            
+            let matchesStatus = true;
+            if (filter === 'upcoming') {
+                matchesStatus = startDate > now;
+            } else if (filter === 'ongoing') {
+                matchesStatus = startDate <= now && endDate >= now;
+            } else if (filter === 'past') {
+                matchesStatus = endDate < now;
+            }
+            
+            // Filter by search term
+            const matchesSearch = 
+                hackathon.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                hackathon.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                hackathon.location?.toLowerCase().includes(searchTerm.toLowerCase());
+            
+            // Filter by tags if any tags are selected
+            const matchesTags = filterTags.length === 0 || 
+                              filterTags.every(tag => 
+                                  hackathon.tags?.some(hackathonTag => 
+                                      hackathonTag.toLowerCase().includes(tag.toLowerCase())
+                                  )
+                              );
+            
+            // Filter by location
+            const matchesLocation = !filterLocation || 
+                                  hackathon.location?.toLowerCase().includes(filterLocation.toLowerCase());
+            
+            // Filter by virtual status
+            const matchesVirtual = filterIsVirtual === '' || 
+                                 (filterIsVirtual === 'true' && hackathon.isVirtual) ||
+                                 (filterIsVirtual === 'false' && !hackathon.isVirtual);
+            
+            return matchesStatus && matchesSearch && matchesTags && 
+                   matchesLocation && matchesVirtual;
+        })
+        .sort((a, b) => {
+            let valueA = a[sortBy] || '';
+            let valueB = b[sortBy] || '';
+            
+            // Handle date fields
+            if (sortBy === 'startDate' || sortBy === 'endDate') {
+                valueA = new Date(valueA).getTime();
+                valueB = new Date(valueB).getTime();
+            }
+            
+            // Handle string comparison
+            if (typeof valueA === 'string' && typeof valueB === 'string') {
+                return sortOrder === 'asc' 
+                    ? valueA.localeCompare(valueB) 
+                    : valueB.localeCompare(valueA);
+            }
+            
+            // Handle numeric comparison
+            return sortOrder === 'asc' 
+                ? valueA - valueB 
+                : valueB - valueA;
+        });
+
     if (loading) {
         return (
             <div className="container mx-auto px-4 py-8 flex justify-center items-center min-h-[50vh]">
@@ -107,53 +181,182 @@ function HackathonListingsPage() {
         );
     }
 
+    // Get unique locations and tags for filter dropdowns
+    const uniqueLocations = [...new Set(hackathons.map(hackathon => hackathon.location).filter(Boolean))];
+    const allTags = hackathons.flatMap(hackathon => hackathon.tags || []).filter(Boolean);
+    const uniqueTags = [...new Set(allTags)];
+
     return (
         <div className="container mx-auto px-4 py-8">
             <div className="flex justify-between items-center mb-8">
                 <h1 className="text-3xl font-bold text-[#0C0950]">Hackathon Events</h1>
-                <div className="flex space-x-4">
-                    <Link 
-                        to="/add-hackathon" 
-                        className="bg-[#261FB3] text-white px-4 py-2 rounded-md hover:bg-[#161179] transition-colors"
-                    >
-                        Add Hackathon
-                    </Link>
-                    <div className="flex space-x-2">
-                        <button 
-                            onClick={() => setFilter('all')} 
-                            className={`px-4 py-2 rounded-md ${filter === 'all' ? 'bg-[#261FB3] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                <Link 
+                    to="/add-hackathon" 
+                    className="bg-[#261FB3] text-white px-4 py-2 rounded-md hover:bg-[#161179] transition-colors"
+                >
+                    Add Hackathon
+                </Link>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-md p-6 border border-gray-100 mb-8">
+                <div className="mb-6">
+                    <label className="block text-[#161179] font-medium mb-2">Search Hackathons</label>
+                    <input
+                        type="text"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        placeholder="Search by name, description, or location"
+                        className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#261FB3] focus:border-transparent"
+                    />
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                    <div>
+                        <label className="block text-[#161179] font-medium mb-2">Filter by Status</label>
+                        <div className="flex space-x-2">
+                            <button 
+                                onClick={() => setFilter('all')} 
+                                className={`px-4 py-2 rounded-md ${filter === 'all' ? 'bg-[#261FB3] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                            >
+                                All
+                            </button>
+                            <button 
+                                onClick={() => setFilter('upcoming')} 
+                                className={`px-4 py-2 rounded-md ${filter === 'upcoming' ? 'bg-[#261FB3] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                            >
+                                Upcoming
+                            </button>
+                            <button 
+                                onClick={() => setFilter('ongoing')} 
+                                className={`px-4 py-2 rounded-md ${filter === 'ongoing' ? 'bg-[#261FB3] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                            >
+                                Ongoing
+                            </button>
+                            <button 
+                                onClick={() => setFilter('past')} 
+                                className={`px-4 py-2 rounded-md ${filter === 'past' ? 'bg-[#261FB3] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                            >
+                                Past
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label className="block text-[#161179] font-medium mb-2">Filter by Location</label>
+                        <select
+                            value={filterLocation}
+                            onChange={(e) => setFilterLocation(e.target.value)}
+                            className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#261FB3] focus:border-transparent"
                         >
-                            All
-                        </button>
-                        <button 
-                            onClick={() => setFilter('upcoming')} 
-                            className={`px-4 py-2 rounded-md ${filter === 'upcoming' ? 'bg-[#261FB3] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                            <option value="">All Locations</option>
+                            {uniqueLocations.map(location => (
+                                <option key={location} value={location}>{location}</option>
+                            ))}
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label className="block text-[#161179] font-medium mb-2">Filter by Type</label>
+                        <select
+                            value={filterIsVirtual}
+                            onChange={(e) => setFilterIsVirtual(e.target.value)}
+                            className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#261FB3] focus:border-transparent"
                         >
-                            Upcoming
-                        </button>
-                        <button 
-                            onClick={() => setFilter('ongoing')} 
-                            className={`px-4 py-2 rounded-md ${filter === 'ongoing' ? 'bg-[#261FB3] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                            <option value="">All Types</option>
+                            <option value="true">Virtual Only</option>
+                            <option value="false">In-Person Only</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div className="mb-4">
+                    <label className="block text-[#161179] font-medium mb-2">Filter by Tags</label>
+                    <div className="flex gap-2 mb-2">
+                        <input
+                            type="text"
+                            value={newTag}
+                            onChange={(e) => setNewTag(e.target.value)}
+                            placeholder="Add a tag to filter"
+                            className="flex-1 px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#261FB3] focus:border-transparent"
+                        />
+                        <button
+                            onClick={handleAddTag}
+                            className="bg-[#261FB3] text-white px-4 py-2 rounded hover:bg-[#161179] transition-colors"
                         >
-                            Ongoing
+                            Add
                         </button>
-                        <button 
-                            onClick={() => setFilter('past')} 
-                            className={`px-4 py-2 rounded-md ${filter === 'past' ? 'bg-[#261FB3] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                        {filterTags.map((tag, index) => (
+                            <span
+                                key={index}
+                                className="bg-[#FBE4D6] text-[#0C0950] px-3 py-1 rounded-full text-sm flex items-center gap-2"
+                            >
+                                {tag}
+                                <button
+                                    onClick={() => handleRemoveTag(tag)}
+                                    className="text-[#0C0950] hover:text-red-600"
+                                >
+                                    ×
+                                </button>
+                            </span>
+                        ))}
+                    </div>
+                    {uniqueTags.length > 0 && (
+                        <div className="mt-2">
+                            <p className="text-sm text-gray-600 mb-1">Popular tags:</p>
+                            <div className="flex flex-wrap gap-2">
+                                {uniqueTags.slice(0, 10).map((tag, index) => (
+                                    <button
+                                        key={index}
+                                        onClick={() => {
+                                            if (!filterTags.includes(tag)) {
+                                                setFilterTags([...filterTags, tag]);
+                                            }
+                                        }}
+                                        className="bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs hover:bg-gray-200"
+                                    >
+                                        {tag}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+                
+                <div className="flex items-center justify-between mt-4">
+                    <div className="flex items-center">
+                        <label className="text-[#161179] font-medium mr-2">Sort by:</label>
+                        <select
+                            value={sortBy}
+                            onChange={(e) => handleSort(e.target.value)}
+                            className="px-3 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#261FB3] focus:border-transparent"
                         >
-                            Past
+                            <option value="startDate">Start Date</option>
+                            <option value="name">Name</option>
+                            <option value="location">Location</option>
+                            <option value="endDate">End Date</option>
+                        </select>
+                        <button
+                            onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                            className="ml-2 text-[#261FB3] hover:text-[#161179]"
+                        >
+                            {sortOrder === 'asc' ? '↑' : '↓'}
                         </button>
+                    </div>
+                    <div className="text-[#161179]">
+                        {filteredAndSortedHackathons.length} hackathons found
                     </div>
                 </div>
             </div>
 
-            {hackathons.length === 0 ? (
+            {filteredAndSortedHackathons.length === 0 ? (
                 <div className="bg-[#FBE4D6] text-[#0C0950] p-6 rounded-lg shadow-md">
-                    <p className="text-lg">No hackathons found for the selected filter.</p>
+                    <p className="text-lg">No hackathons found for the selected filters.</p>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {hackathons.map((hackathon) => (
+                    {filteredAndSortedHackathons.map((hackathon) => (
                         <div key={hackathon.id} className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-100 hover:shadow-lg transition-shadow duration-300">
                             <div className="h-48 overflow-hidden">
                                 {hackathon.imageUrl ? (
@@ -191,7 +394,12 @@ function HackathonListingsPage() {
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                                             </svg>
-                                            <span className="text-gray-700">{hackathon.location}</span>
+                                            <span className="text-gray-700">
+                                                {hackathon.location}
+                                                {hackathon.isVirtual && (
+                                                    <span className="ml-1 text-xs bg-[#FBE4D6] text-[#0C0950] px-2 py-0.5 rounded-full">Virtual</span>
+                                                )}
+                                            </span>
                                         </div>
                                     )}
                                     

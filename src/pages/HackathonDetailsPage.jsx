@@ -1,13 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
+import { useAuth } from '../contexts/AuthContext';
+import TeamForm from '../components/team/TeamForm';
+import TeamList from '../components/team/TeamList';
 
 function HackathonDetailsPage() {
     const [hackathon, setHackathon] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [showTeamForm, setShowTeamForm] = useState(false);
+    const [userTeams, setUserTeams] = useState([]);
     const { hackathonId } = useParams();
+    const { currentUser } = useAuth();
 
     useEffect(() => {
         async function fetchHackathonDetails() {
@@ -40,6 +46,33 @@ function HackathonDetailsPage() {
         fetchHackathonDetails();
     }, [hackathonId]);
 
+    useEffect(() => {
+        async function fetchUserTeams() {
+            if (!currentUser) return;
+            
+            try {
+                const teamsCollection = collection(db, 'teams');
+                const teamsQuery = query(
+                    teamsCollection,
+                    where('hackathonId', '==', hackathonId),
+                    where('members', 'array-contains', currentUser.uid)
+                );
+                
+                const teamsSnapshot = await getDocs(teamsQuery);
+                const teams = teamsSnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                
+                setUserTeams(teams);
+            } catch (err) {
+                console.error("Error fetching user teams:", err);
+            }
+        }
+
+        fetchUserTeams();
+    }, [currentUser, hackathonId]);
+
     const formatDate = (dateString) => {
         try {
             const options = { year: 'numeric', month: 'long', day: 'numeric' };
@@ -67,6 +100,14 @@ function HackathonDetailsPage() {
             console.error("Error determining status:", error);
             return <span className="bg-gray-200 text-gray-700 px-3 py-1 rounded-full text-sm font-medium">Unknown</span>;
         }
+    };
+
+    const isHackathonActive = () => {
+        if (!hackathon) return false;
+        const now = new Date();
+        const start = new Date(hackathon.startDate);
+        const end = new Date(hackathon.endDate);
+        return now >= start && now <= end;
     };
 
     if (loading) {
@@ -136,17 +177,9 @@ function HackathonDetailsPage() {
                     <div className="flex flex-col md:flex-row md:justify-between md:items-start mb-6">
                         <div>
                             <h1 className="text-3xl font-bold text-[#0C0950] mb-2">{hackathon.name}</h1>
-                            <div className="flex items-center mb-4">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#261FB3] mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                </svg>
-                                <span className="text-gray-700">
-                                    {formatDate(hackathon.startDate)} - {formatDate(hackathon.endDate)}
-                                </span>
+                            <div className="flex items-center gap-4">
+                                {getStatusBadge(hackathon.startDate, hackathon.endDate)}
                             </div>
-                        </div>
-                        <div className="mt-4 md:mt-0">
-                            {getStatusBadge(hackathon.startDate, hackathon.endDate)}
                         </div>
                     </div>
 
@@ -222,7 +255,7 @@ function HackathonDetailsPage() {
                     )}
 
                     {/* Links */}
-                    <div className="flex flex-wrap gap-4">
+                    <div className="flex flex-wrap gap-4 mb-8">
                         {hackathon.websiteUrl && (
                             <a 
                                 href={hackathon.websiteUrl} 
@@ -243,6 +276,42 @@ function HackathonDetailsPage() {
                                 Register Now
                             </a>
                         )}
+                    </div>
+
+                    {/* Team Management Section */}
+                    <div className="border-t border-gray-200 pt-8">
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-2xl font-bold text-[#0C0950]">Teams</h2>
+                            {currentUser && isHackathonActive() && (
+                                <div className="flex gap-4">
+                                    {userTeams.length === 0 && (
+                                        <button
+                                            onClick={() => setShowTeamForm(!showTeamForm)}
+                                            className="bg-[#261FB3] text-white px-4 py-2 rounded hover:bg-[#161179] transition-colors"
+                                        >
+                                            {showTeamForm ? 'Cancel' : 'Create Team'}
+                                        </button>
+                                    )}
+                                    <Link 
+                                        to={`/hackathon/${hackathonId}/teams`}
+                                        className="bg-[#FBE4D6] text-[#0C0950] px-4 py-2 rounded hover:bg-[#f5d5c3] transition-colors"
+                                    >
+                                        Browse Teams
+                                    </Link>
+                                </div>
+                            )}
+                        </div>
+
+                        {showTeamForm && (
+                            <div className="mb-8">
+                                <TeamForm 
+                                    hackathonId={hackathonId} 
+                                    onTeamCreated={() => setShowTeamForm(false)} 
+                                />
+                            </div>
+                        )}
+
+                        <TeamList hackathonId={hackathonId} />
                     </div>
                 </div>
             </div>

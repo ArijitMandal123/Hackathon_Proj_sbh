@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import ProfileCard from '../components/ProfileCard';
 import { db } from '../firebase.js'; // Import db from firebase.js
 import { collection, getDocs } from 'firebase/firestore'; // Correct imports from firebase/firestore
+import { Link } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
 function HomePage() {
     const [profiles, setProfiles] = useState([]);

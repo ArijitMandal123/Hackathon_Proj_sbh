@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { getProfilePicture, calculateGithubExperienceLevel } from '../utils/githubUtils';
+import { useAuth } from '../contexts/AuthContext';
 
 function ProfileDetailsPage() {
     const [profile, setProfile] = useState(null);
