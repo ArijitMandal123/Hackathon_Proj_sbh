@@ -1,1 +1,60 @@
 @import "tailwindcss";
+
+:root {
+  --color-peach: #FBE4D6;
+  --color-deep-blue: #261FB3;
+  --color-dark-blue: #161179;
+  --color-navy: #0C0950;
+}
+
+body {
+  font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f8f9fa;
+  color: var(--color-navy);
+}
+
+.btn-primary {
+  background-color: var(--color-deep-blue);
+  color: white;
+  transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+  background-color: var(--color-dark-blue);
+}
+
+.btn-secondary {
+  background-color: var(--color-peach);
+  color: var(--color-navy);
+  transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+  background-color: #f5d5c3;
+}
+
+.card {
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.section-title {
+  color: var(--color-deep-blue);
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+}
+
+.badge {
+  background-color: var(--color-peach);
+  color: var(--color-navy);
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}

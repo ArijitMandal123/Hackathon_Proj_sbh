@@ -31,20 +31,32 @@ function HomePage() {
     }, []); // Run this effect only once on component mount
 
     if (loading) {
-        return <div className="container mx-auto px-4 py-8">Loading profiles...</div>;
+        return (
+            <div className="container mx-auto px-4 py-8 flex justify-center items-center min-h-[50vh]">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#261FB3]"></div>
+            </div>
+        );
     }
 
     if (error) {
-        return <div className="container mx-auto px-4 py-8 text-red-500">Error: {error}</div>;
+        return (
+            <div className="container mx-auto px-4 py-8">
+                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                    Error: {error}
+                </div>
+            </div>
+        );
     }
 
     return (
         <div className="container mx-auto px-4 py-8">
-            <h1 className="text-3xl font-bold mb-4">Find Your Hackathon Teammates</h1>
+            <h1 className="text-3xl font-bold mb-6 text-[#0C0950]">Find Your Hackathon Teammates</h1>
             {profiles.length === 0 && !loading && !error ? (
-                <p>No profiles yet. Be the first to create one!</p>
+                <div className="bg-[#FBE4D6] text-[#0C0950] p-6 rounded-lg shadow-md">
+                    <p className="text-lg">No profiles yet. Be the first to create one!</p>
+                </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {profiles.map((profile) => (
                         <ProfileCard key={profile.userId} {...profile} />
                     ))}

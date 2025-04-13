@@ -47,7 +47,7 @@ function ProfileDetailsPage() {
     if (loading) {
         return (
             <div className="flex justify-center items-center min-h-screen">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#261FB3]"></div>
             </div>
         );
     }
@@ -76,9 +76,9 @@ function ProfileDetailsPage() {
         <div className="container mx-auto px-4 py-8">
             <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden">
                 {/* Header Section */}
-                <div className="bg-blue-600 text-white p-6">
+                <div className="bg-[#261FB3] text-white p-6">
                     <div className="flex items-center">
-                        <div className="w-24 h-24 rounded-full overflow-hidden mr-6 border-4 border-white">
+                        <div className="w-24 h-24 rounded-full overflow-hidden mr-6 border-4 border-[#FBE4D6]">
                             {profilePicture ? (
                                 <img 
                                     src={profilePicture} 
@@ -93,11 +93,11 @@ function ProfileDetailsPage() {
                         </div>
                         <div>
                             <h1 className="text-3xl font-bold">{profile.name}</h1>
-                            <p className="text-blue-100">{profile.role}</p>
+                            <p className="text-[#FBE4D6]">{profile.role}</p>
                             {githubExperience && (
                                 <span className={`inline-block px-3 py-1 text-sm rounded-full mt-2 ${
-                                    githubExperience === 'Pro' ? 'bg-green-100 text-green-800' :
-                                    githubExperience === 'Intermediate' ? 'bg-blue-100 text-blue-800' :
+                                    githubExperience === 'Pro' ? 'bg-[#FBE4D6] text-[#0C0950]' :
+                                    githubExperience === 'Intermediate' ? 'bg-[#161179] text-white' :
                                     'bg-gray-100 text-gray-800'
                                 }`}>
                                     GitHub Experience: {githubExperience}
@@ -110,46 +110,46 @@ function ProfileDetailsPage() {
                 <div className="p-6">
                     {/* Basic Information */}
                     <section className="mb-8">
-                        <h2 className="text-2xl font-semibold mb-4 text-gray-800">Basic Information</h2>
+                        <h2 className="text-2xl font-semibold mb-4 text-[#0C0950]">Basic Information</h2>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="bg-gray-50 p-4 rounded">
+                            <div className="bg-gray-50 p-4 rounded border border-gray-100">
                                 <p className="text-gray-600">Email</p>
-                                <p className="font-medium">{profile.email}</p>
+                                <p className="font-medium text-[#161179]">{profile.email}</p>
                             </div>
-                            <div className="bg-gray-50 p-4 rounded">
+                            <div className="bg-gray-50 p-4 rounded border border-gray-100">
                                 <p className="text-gray-600">Experience Level</p>
-                                <p className="font-medium">{profile.experience}</p>
+                                <p className="font-medium text-[#161179]">{profile.experience}</p>
                             </div>
-                            <div className="bg-gray-50 p-4 rounded">
+                            <div className="bg-gray-50 p-4 rounded border border-gray-100">
                                 <p className="text-gray-600">Location</p>
-                                <p className="font-medium">{profile.location}</p>
+                                <p className="font-medium text-[#161179]">{profile.location}</p>
                             </div>
-                            <div className="bg-gray-50 p-4 rounded">
+                            <div className="bg-gray-50 p-4 rounded border border-gray-100">
                                 <p className="text-gray-600">Timezone</p>
-                                <p className="font-medium">{profile.timezone}</p>
+                                <p className="font-medium text-[#161179]">{profile.timezone}</p>
                             </div>
                         </div>
                     </section>
 
                     {/* Technical Skills */}
                     <section className="mb-8">
-                        <h2 className="text-2xl font-semibold mb-4 text-gray-800">Technical Skills</h2>
+                        <h2 className="text-2xl font-semibold mb-4 text-[#0C0950]">Technical Skills</h2>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="bg-gray-50 p-4 rounded">
+                            <div className="bg-gray-50 p-4 rounded border border-gray-100">
                                 <p className="text-gray-600">Tech Stack</p>
                                 <div className="flex flex-wrap gap-2 mt-2">
                                     {profile.techStack?.map((tech, index) => (
-                                        <span key={index} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
+                                        <span key={index} className="bg-[#FBE4D6] text-[#0C0950] px-3 py-1 rounded-full text-sm">
                                             {tech}
                                         </span>
                                     ))}
                                 </div>
                             </div>
-                            <div className="bg-gray-50 p-4 rounded">
+                            <div className="bg-gray-50 p-4 rounded border border-gray-100">
                                 <p className="text-gray-600">Programming Languages</p>
                                 <div className="flex flex-wrap gap-2 mt-2">
                                     {profile.languages?.map((lang, index) => (
-                                        <span key={index} className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm">
+                                        <span key={index} className="bg-[#261FB3] text-white px-3 py-1 rounded-full text-sm">
                                             {lang}
                                         </span>
                                     ))}
@@ -160,34 +160,34 @@ function ProfileDetailsPage() {
 
                     {/* Work Preferences */}
                     <section className="mb-8">
-                        <h2 className="text-2xl font-semibold mb-4 text-gray-800">Work Preferences</h2>
+                        <h2 className="text-2xl font-semibold mb-4 text-[#0C0950]">Work Preferences</h2>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="bg-gray-50 p-4 rounded">
+                            <div className="bg-gray-50 p-4 rounded border border-gray-100">
                                 <p className="text-gray-600">Work Mode</p>
-                                <p className="font-medium">{profile.mode}</p>
+                                <p className="font-medium text-[#161179]">{profile.mode}</p>
                             </div>
-                            <div className="bg-gray-50 p-4 rounded">
+                            <div className="bg-gray-50 p-4 rounded border border-gray-100">
                                 <p className="text-gray-600">Availability</p>
-                                <p className="font-medium">{profile.availability}</p>
+                                <p className="font-medium text-[#161179]">{profile.availability}</p>
                             </div>
-                            <div className="bg-gray-50 p-4 rounded">
+                            <div className="bg-gray-50 p-4 rounded border border-gray-100">
                                 <p className="text-gray-600">Communication Style</p>
-                                <p className="font-medium">{profile.communicationStyle}</p>
+                                <p className="font-medium text-[#161179]">{profile.communicationStyle}</p>
                             </div>
-                            <div className="bg-gray-50 p-4 rounded">
+                            <div className="bg-gray-50 p-4 rounded border border-gray-100">
                                 <p className="text-gray-600">Preferred Team Size</p>
-                                <p className="font-medium">{profile.teamSize}</p>
+                                <p className="font-medium text-[#161179]">{profile.teamSize}</p>
                             </div>
                         </div>
                     </section>
 
                     {/* Project Interests */}
                     <section className="mb-8">
-                        <h2 className="text-2xl font-semibold mb-4 text-gray-800">Project Interests</h2>
-                        <div className="bg-gray-50 p-4 rounded">
+                        <h2 className="text-2xl font-semibold mb-4 text-[#0C0950]">Project Interests</h2>
+                        <div className="bg-gray-50 p-4 rounded border border-gray-100">
                             <div className="flex flex-wrap gap-2">
                                 {profile.projectInterests?.map((interest, index) => (
-                                    <span key={index} className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm">
+                                    <span key={index} className="bg-[#FBE4D6] text-[#0C0950] px-3 py-1 rounded-full text-sm">
                                         {interest}
                                     </span>
                                 ))}
@@ -197,36 +197,36 @@ function ProfileDetailsPage() {
 
                     {/* Additional Information */}
                     <section className="mb-8">
-                        <h2 className="text-2xl font-semibold mb-4 text-gray-800">Additional Information</h2>
-                        <div className="bg-gray-50 p-4 rounded">
+                        <h2 className="text-2xl font-semibold mb-4 text-[#0C0950]">Additional Information</h2>
+                        <div className="bg-gray-50 p-4 rounded border border-gray-100">
                             <p className="text-gray-600">Additional Preferences</p>
-                            <p className="mt-2">{profile.preferences || 'No additional preferences specified'}</p>
+                            <p className="mt-2 text-[#161179]">{profile.preferences || 'No additional preferences specified'}</p>
                         </div>
                     </section>
 
                     {/* Links */}
                     <section className="mb-8">
-                        <h2 className="text-2xl font-semibold mb-4 text-gray-800">Links</h2>
+                        <h2 className="text-2xl font-semibold mb-4 text-[#0C0950]">Links</h2>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             {profile.portfolio && (
                                 <a href={profile.portfolio} target="_blank" rel="noopener noreferrer" 
-                                   className="bg-gray-50 p-4 rounded hover:bg-gray-100 transition-colors">
+                                   className="bg-gray-50 p-4 rounded hover:bg-gray-100 transition-colors border border-gray-100">
                                     <p className="text-gray-600">Portfolio</p>
-                                    <p className="font-medium text-blue-600">View Portfolio</p>
+                                    <p className="font-medium text-[#261FB3]">View Portfolio</p>
                                 </a>
                             )}
                             {profile.github && (
                                 <a href={profile.github} target="_blank" rel="noopener noreferrer"
-                                   className="bg-gray-50 p-4 rounded hover:bg-gray-100 transition-colors">
+                                   className="bg-gray-50 p-4 rounded hover:bg-gray-100 transition-colors border border-gray-100">
                                     <p className="text-gray-600">GitHub</p>
-                                    <p className="font-medium text-blue-600">View GitHub</p>
+                                    <p className="font-medium text-[#261FB3]">View GitHub</p>
                                 </a>
                             )}
                             {profile.linkedin && (
                                 <a href={profile.linkedin} target="_blank" rel="noopener noreferrer"
-                                   className="bg-gray-50 p-4 rounded hover:bg-gray-100 transition-colors">
+                                   className="bg-gray-50 p-4 rounded hover:bg-gray-100 transition-colors border border-gray-100">
                                     <p className="text-gray-600">LinkedIn</p>
-                                    <p className="font-medium text-blue-600">View LinkedIn</p>
+                                    <p className="font-medium text-[#261FB3]">View LinkedIn</p>
                                 </a>
                             )}
                         </div>
