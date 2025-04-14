@@ -5,7 +5,9 @@ import {
     signInWithEmailAndPassword,
     createUserWithEmailAndPassword,
     signOut,
-    updateProfile
+    updateProfile,
+    GoogleAuthProvider,
+    signInWithPopup
 } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -53,6 +55,38 @@ export function AuthProvider({ children }) {
         try {
             setError(null);
             return await signInWithEmailAndPassword(auth, email, password);
+        } catch (err) {
+            setError(err.message);
+            throw err;
+        }
+    }
+
+    async function googleSignIn() {
+        try {
+            setError(null);
+            const provider = new GoogleAuthProvider();
+            const result = await signInWithPopup(auth, provider);
+            
+            // Check if user profile exists in Firestore
+            const userDoc = await getDoc(doc(db, 'users', result.user.uid));
+            
+            if (!userDoc.exists()) {
+                // Create user profile if it doesn't exist
+                await setDoc(doc(db, 'users', result.user.uid), {
+                    name: result.user.displayName || 'User',
+                    email: result.user.email,
+                    createdAt: new Date().toISOString(),
+                    role: 'participant',
+                    skills: [],
+                    experience: 'beginner',
+                    bio: '',
+                    githubUrl: '',
+                    linkedinUrl: '',
+                    portfolioUrl: ''
+                });
+            }
+            
+            return result;
         } catch (err) {
             setError(err.message);
             throw err;
@@ -111,6 +145,7 @@ export function AuthProvider({ children }) {
         signup,
         login,
         logout,
+        googleSignIn,
         updateUserProfile
     };
 

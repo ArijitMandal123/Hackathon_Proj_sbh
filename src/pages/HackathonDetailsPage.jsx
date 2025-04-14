@@ -55,7 +55,7 @@ function HackathonDetailsPage() {
                 const teamsQuery = query(
                     teamsCollection,
                     where('hackathonId', '==', hackathonId),
-                    where('members', 'array-contains', currentUser.uid)
+                    where('members', 'array-contains', { userId: currentUser.uid })
                 );
                 
                 const teamsSnapshot = await getDocs(teamsQuery);
@@ -67,6 +67,7 @@ function HackathonDetailsPage() {
                 setUserTeams(teams);
             } catch (err) {
                 console.error("Error fetching user teams:", err);
+                setError("Failed to fetch user teams: " + err.message);
             }
         }
 
@@ -284,34 +285,54 @@ function HackathonDetailsPage() {
                             <h2 className="text-2xl font-bold text-[#0C0950]">Teams</h2>
                             {currentUser && isHackathonActive() && (
                                 <div className="flex gap-4">
-                                    {userTeams.length === 0 && (
+                                    {!showTeamForm && userTeams.length === 0 && (
                                         <button
-                                            onClick={() => setShowTeamForm(!showTeamForm)}
+                                            onClick={() => setShowTeamForm(true)}
                                             className="bg-[#261FB3] text-white px-4 py-2 rounded hover:bg-[#161179] transition-colors"
                                         >
-                                            {showTeamForm ? 'Cancel' : 'Create Team'}
+                                            Create Team
                                         </button>
                                     )}
-                                    <Link 
-                                        to={`/hackathon/${hackathonId}/teams`}
-                                        className="bg-[#FBE4D6] text-[#0C0950] px-4 py-2 rounded hover:bg-[#f5d5c3] transition-colors"
-                                    >
-                                        Browse Teams
-                                    </Link>
+                                    {showTeamForm && (
+                                        <button
+                                            onClick={() => setShowTeamForm(false)}
+                                            className="bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300 transition-colors"
+                                        >
+                                            Cancel
+                                        </button>
+                                    )}
+                                    {!showTeamForm && (
+                                        <Link 
+                                            to={`/hackathon/${hackathonId}/teams`}
+                                            className="bg-[#FBE4D6] text-[#0C0950] px-4 py-2 rounded hover:bg-[#f5d5c3] transition-colors"
+                                        >
+                                            Browse Teams
+                                        </Link>
+                                    )}
                                 </div>
                             )}
                         </div>
 
-                        {showTeamForm && (
+                        {showTeamForm ? (
                             <div className="mb-8">
                                 <TeamForm 
                                     hackathonId={hackathonId} 
-                                    onTeamCreated={() => setShowTeamForm(false)} 
+                                    onSuccess={() => {
+                                        setShowTeamForm(false);
+                                        // Refresh user teams
+                                        fetchUserTeams();
+                                    }} 
                                 />
                             </div>
+                        ) : (
+                            <TeamList 
+                                hackathonId={hackathonId} 
+                                onTeamJoined={() => {
+                                    // Refresh user teams
+                                    fetchUserTeams();
+                                }}
+                            />
                         )}
-
-                        <TeamList hackathonId={hackathonId} />
                     </div>
                 </div>
             </div>
