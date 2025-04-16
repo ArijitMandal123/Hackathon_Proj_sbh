@@ -4,7 +4,7 @@ import { db } from "../firebase"; // Import db from firebase.js
 import { doc, setDoc } from "firebase/firestore"; // Correct imports from firebase/firestore
 import { useNavigate } from "react-router-dom";
 
-function ProfileForm() {
+function ProfileForm({ returnTo = "/hackathons" }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -140,7 +140,7 @@ function ProfileForm() {
 
       // Navigate to hackathons page after successful profile creation
       setTimeout(() => {
-        navigate("/hackathons");
+        navigate(returnTo);
       }, 2000);
     } catch (firebaseError) {
       if (firebaseError.code === "auth/email-already-in-use") {

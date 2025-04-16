@@ -8,9 +8,13 @@ import {
   updateProfile,
   GoogleAuthProvider,
   signInWithPopup,
+  deleteUser,
+  reauthenticateWithCredential,
+  EmailAuthProvider,
 } from "firebase/auth";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, deleteDoc } from "firebase/firestore";
 import { db } from "../firebase";
+import { cleanupDeletedUserData } from "../utils/userCleanup";
 
 const AuthContext = createContext();
 
@@ -135,6 +139,46 @@ export function AuthProvider({ children }) {
     }
   }
 
+  /**
+   * Delete user account and clean up all associated data
+   * @param {string} password - Current password for reauthentication (required for security)
+   */
+  async function deleteAccount(password) {
+    try {
+      setError(null);
+      if (!currentUser) throw new Error("No user logged in");
+
+      // Store the userId for cleanup after account deletion
+      const userId = currentUser.uid;
+
+      // Re-authenticate the user before deleting (required by Firebase)
+      if (password) {
+        const credential = EmailAuthProvider.credential(
+          currentUser.email,
+          password
+        );
+        await reauthenticateWithCredential(currentUser, credential);
+      }
+
+      // Delete the user's profile from Firestore
+      const userDocRef = doc(db, "users", userId);
+      await deleteDoc(userDocRef);
+
+      // Clean up user data in teams
+      await cleanupDeletedUserData(userId);
+
+      // Delete the user's authentication account
+      await deleteUser(currentUser);
+
+      // The onAuthStateChanged listener will handle setting currentUser to null
+      return true;
+    } catch (err) {
+      console.error("Error deleting account:", err);
+      setError(err.message);
+      throw err;
+    }
+  }
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
@@ -164,6 +208,7 @@ export function AuthProvider({ children }) {
     logout,
     googleSignIn,
     updateUserProfile,
+    deleteAccount,
   };
 
   return (

@@ -57,7 +57,7 @@ function HackathonTeamsPage() {
 
         const teamsSnapshot = await getDocs(teamsQuery);
 
-        // Filter teams where the user is a member
+        // Filter teams where the user is an active member (not marked as deleted)
         const teams = teamsSnapshot.docs
           .map((doc) => ({
             id: doc.id,
@@ -66,7 +66,10 @@ function HackathonTeamsPage() {
           .filter(
             (team) =>
               team.members &&
-              team.members.some((member) => member.userId === currentUser.uid)
+              team.members.some(
+                (member) =>
+                  member.userId === currentUser.uid && !member.isDeleted
+              )
           );
 
         setUserTeams(teams);
@@ -142,6 +145,21 @@ function HackathonTeamsPage() {
             )}
           </div>
 
+          <div className="mb-6 bg-blue-50 text-blue-800 p-4 border-l-4 border-blue-500 rounded">
+            <p className="font-medium">Hackathon Team Rules:</p>
+            <ul className="list-disc ml-5 mt-1 text-sm">
+              <li>
+                You can only join <strong>one team</strong> per hackathon
+              </li>
+              <li>
+                Once you've joined or created a team, you cannot join another
+                team in this hackathon
+              </li>
+              <li>Each team must have a designated team leader</li>
+              <li>Teams without active leaders will be removed</li>
+            </ul>
+          </div>
+
           {!isUserInTeam && currentUser && (
             <div className="mb-8 bg-white rounded-lg shadow-md p-6 border border-gray-100">
               <h3 className="text-xl font-semibold text-[#0C0950] mb-4">
@@ -173,25 +191,73 @@ function HackathonTeamsPage() {
               </div>
               {userTeams.length > 0 && (
                 <div className="mt-4">
-                  <p className="font-medium text-gray-700">
-                    Team:{" "}
-                    <span className="text-[#0C0950]">{userTeams[0].name}</span>
-                  </p>
+                  <div className="flex justify-between items-center">
+                    <p className="font-medium text-gray-700">
+                      Team:{" "}
+                      <span className="text-[#0C0950]">
+                        {userTeams[0].name}
+                      </span>
+                    </p>
+                    <div className="bg-[#EEF2FF] text-[#4F46E5] text-sm px-3 py-1 rounded-full">
+                      {userTeams[0].members.filter((m) => !m.isDeleted).length}{" "}
+                      / {userTeams[0].maxMembers} Members
+                    </div>
+                  </div>
+
                   {userTeams[0].members &&
                     userTeams[0].members.find(
-                      (m) => m.userId === currentUser?.uid
+                      (m) => m.userId === currentUser?.uid && !m.isDeleted
                     )?.role && (
-                      <p className="text-gray-600 mt-1">
+                      <p className="text-gray-600 mt-2">
                         Your role:{" "}
                         <span className="capitalize">
                           {
                             userTeams[0].members.find(
-                              (m) => m.userId === currentUser?.uid
+                              (m) =>
+                                m.userId === currentUser?.uid && !m.isDeleted
                             )?.role
                           }
                         </span>
                       </p>
                     )}
+
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {userTeams[0].members &&
+                      userTeams[0].members
+                        .filter((m) => !m.isDeleted)
+                        .map((member, index) => (
+                          <div
+                            key={index}
+                            className="text-xs px-2 py-1 bg-gray-100 rounded-full text-gray-700"
+                          >
+                            {member.role === "leader" ? "👑 " : ""}
+                            {member.userId === currentUser?.uid
+                              ? "You"
+                              : "Member"}
+                          </div>
+                        ))}
+
+                    {userTeams[0].members &&
+                      userTeams[0].maxMembers >
+                        userTeams[0].members.filter((m) => !m.isDeleted)
+                          .length &&
+                      Array.from(
+                        {
+                          length:
+                            userTeams[0].maxMembers -
+                            userTeams[0].members.filter((m) => !m.isDeleted)
+                              .length,
+                        },
+                        (_, i) => (
+                          <div
+                            key={`vacancy-${i}`}
+                            className="text-xs px-2 py-1 bg-green-100 rounded-full text-green-700"
+                          >
+                            Open Position
+                          </div>
+                        )
+                      )}
+                  </div>
                 </div>
               )}
             </div>
