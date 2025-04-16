@@ -10,6 +10,7 @@ import HackathonDetailsPage from "./pages/HackathonDetailsPage";
 import AddHackathonPage from "./pages/AddHackathonPage"; // Import AddHackathonPage
 import HackathonTeamsPage from "./pages/HackathonTeamsPage";
 import ProfilesPage from "./pages/ProfilesPage";
+import TeamDetailPage from "./pages/TeamDetailPage";
 import { useAuth, AuthProvider } from "./contexts/AuthContext";
 
 function AppContent() {
@@ -77,6 +78,7 @@ function AppContent() {
           path="/hackathon/:hackathonId/teams"
           element={<HackathonTeamsPage />}
         />
+        <Route path="/team/:teamId" element={<TeamDetailPage />} />
         <Route
           path="/add-hackathon"
           element={currentUser ? <AddHackathonPage /> : <LandingPage />}
