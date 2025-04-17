@@ -8,6 +8,7 @@ import {
   updateDoc,
   arrayUnion,
   getDoc,
+  addDoc,
 } from "firebase/firestore";
 import { db } from "../../firebase";
 import { useAuth } from "../../contexts/AuthContext";
@@ -25,6 +26,7 @@ function TeamList({ hackathonId, onTeamJoined }) {
   const [showVacanciesOnly, setShowVacanciesOnly] = useState(false);
   const [filteredTeams, setFilteredTeams] = useState([]);
   const [userInHackathonTeam, setUserInHackathonTeam] = useState(false);
+  const [success, setSuccess] = useState("");
 
   useEffect(() => {
     fetchTeams();
@@ -268,81 +270,33 @@ function TeamList({ hackathonId, onTeamJoined }) {
         );
       }
 
-      // Find deleted members that could be reused as vacant positions
-      const vacantPositions = team.members
-        ? team.members.filter((member) => member.isDeleted)
-        : [];
-      console.log(
-        `Found ${vacantPositions.length} vacant positions in team ${team.id}`
+      // Check if there's already a pending join request from this user
+      const existingRequestQuery = query(
+        collection(db, "joinRequests"),
+        where("teamId", "==", teamId),
+        where("userId", "==", currentUser.uid),
+        where("status", "==", "pending")
       );
-
-      // If there are deleted members, reuse a vacant position if available
-      const vacantPosition =
-        vacantPositions.length > 0 ? vacantPositions[0] : null;
-
-      if (vacantPosition) {
-        console.log(
-          `Using vacant position previously held by user ${vacantPosition.userId}`
-        );
-        // Reuse the vacant position by updating it with the new member info
-        const updatedMembers = team.members.map((member) => {
-          if (member.userId === vacantPosition.userId && member.isDeleted) {
-            return {
-              userId: currentUser.uid,
-              role: "member",
-              joinedAt: new Date().toISOString(),
-              isDeleted: false,
-              // Add reference to original position for tracking
-              replacedUser: vacantPosition.userId,
-            };
-          }
-          return member;
-        });
-
-        await updateDoc(teamRef, {
-          members: updatedMembers,
-        });
-
-        logTeamStatus(
-          { ...team, members: updatedMembers },
-          "after join (reused position)"
-        );
-      } else {
-        // Add user to team members as normal if no vacant positions
-        console.log(`Adding new member position to team ${team.id}`);
-        const newMember = {
-          userId: currentUser.uid,
-          role: "member",
-          joinedAt: new Date().toISOString(),
-          isDeleted: false,
-        };
-
-        const updatedMembers = [...(team.members || []), newMember];
-
-        await updateDoc(teamRef, {
-          members: updatedMembers,
-        });
-
-        logTeamStatus(
-          { ...team, members: updatedMembers },
-          "after join (new position)"
-        );
+      const existingRequestSnapshot = await getDocs(existingRequestQuery);
+      
+      if (!existingRequestSnapshot.empty) {
+        throw new Error("You already have a pending join request for this team");
       }
 
-      // Update state to reflect changes
-      await fetchTeams(); // Refetch all teams with latest data
-      setUserInHackathonTeam(true);
+      // Create a new join request
+      await addDoc(collection(db, "joinRequests"), {
+        teamId,
+        userId: currentUser.uid,
+        status: "pending",
+        createdAt: new Date().toISOString(),
+      });
 
-      // Show success notification
-      setError(""); // Clear any previous errors
+      // Show success message
+      setError("");
+      setSuccess("Join request sent successfully! Please wait for the team leader to review your request.");
 
-      // Notify parent component if callback exists
-      if (onTeamJoined) {
-        onTeamJoined(teamId);
-      }
-
-      // Log successful join
-      logTeamStatus({ ...team, members: updatedMembers }, "after join");
+      // Refresh teams list
+      await fetchTeams();
     } catch (err) {
       console.error("Error joining team:", err);
       setError(err.message || "Failed to join team");
@@ -411,6 +365,12 @@ function TeamList({ hackathonId, onTeamJoined }) {
           </label>
         </div>
       </div>
+
+      {success && (
+        <div className="mb-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
+          {success}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredTeams.map((team) => {
@@ -543,9 +503,11 @@ function TeamList({ hackathonId, onTeamJoined }) {
                   <button
                     onClick={() => handleJoinTeam(team.id)}
                     disabled={joiningTeam}
-                    className="bg-[#261FB3] text-white px-4 py-2 rounded text-sm hover:bg-[#161179] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className={`bg-[#261FB3] text-white px-4 py-2 rounded hover:bg-[#161179] transition-colors ${
+                      joiningTeam ? "opacity-50 cursor-not-allowed" : ""
+                    }`}
                   >
-                    {joiningTeam ? "Joining..." : "Join Team"}
+                    {joiningTeam ? "Sending Request..." : "Apply to Join"}
                   </button>
                 )}
 
@@ -559,6 +521,28 @@ function TeamList({ hackathonId, onTeamJoined }) {
                   <span className="text-sm text-gray-500">
                     Already in a team
                   </span>
+                )}
+              </div>
+
+              <div className="mt-4 flex justify-end">
+                {currentUser && !isUserInTeam && !userInHackathonTeam && (
+                  <button
+                    onClick={() => handleJoinTeam(team.id)}
+                    disabled={joiningTeam}
+                    className={`bg-[#261FB3] text-white px-4 py-2 rounded hover:bg-[#161179] transition-colors ${
+                      joiningTeam ? "opacity-50 cursor-not-allowed" : ""
+                    }`}
+                  >
+                    {joiningTeam ? "Sending Request..." : "Apply to Join"}
+                  </button>
+                )}
+                {isUserInTeam && userRole === "leader" && (
+                  <Link
+                    to={`/team/${team.id}/requests`}
+                    className="bg-[#FBE4D6] text-[#0C0950] px-4 py-2 rounded hover:bg-[#f5d5c3] transition-colors"
+                  >
+                    Manage Requests
+                  </Link>
                 )}
               </div>
             </div>

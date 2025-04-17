@@ -17,7 +17,7 @@ function LoginForm({ returnTo = "/" }) {
       setError("");
       setLoading(true);
       await login(emailRef.current.value, passwordRef.current.value);
-      navigate(returnTo); // Redirect to returnTo URL after successful login
+      navigate('/hackathons'); // Redirect to hackathons page after successful login
     } catch (firebaseError) {
       if (firebaseError.code === "auth/invalid-credential") {
         setError(

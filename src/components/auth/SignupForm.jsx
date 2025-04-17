@@ -31,7 +31,7 @@ function SignupForm() {
                 passwordRef.current.value,
                 nameRef.current.value
             );
-            navigate('/profile'); // Redirect to profile page after successful signup
+            navigate('/hackathons'); // Redirect to hackathons page after successful signup
         } catch (firebaseError) {
             setError(firebaseError.message);
         }
