@@ -2,7 +2,7 @@ import React, { useRef, useState } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 
-function LoginForm() {
+function LoginForm({ returnTo = "/" }) {
   const emailRef = useRef();
   const passwordRef = useRef();
   const { login, googleSignIn } = useAuth();
@@ -17,7 +17,7 @@ function LoginForm() {
       setError("");
       setLoading(true);
       await login(emailRef.current.value, passwordRef.current.value);
-      navigate("/"); // Redirect to home page after successful login
+      navigate(returnTo); // Redirect to returnTo URL after successful login
     } catch (firebaseError) {
       if (firebaseError.code === "auth/invalid-credential") {
         setError(
@@ -48,7 +48,7 @@ function LoginForm() {
       setError("");
       setLoading(true);
       await googleSignIn();
-      navigate("/"); // Redirect to home page after successful Google sign-in
+      navigate(returnTo); // Redirect to returnTo URL after successful Google sign-in
     } catch (firebaseError) {
       if (firebaseError.code === "auth/popup-closed-by-user") {
         setError(
