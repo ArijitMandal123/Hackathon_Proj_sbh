@@ -25,15 +25,7 @@ function LoginPage() {
       <div className="bg-white rounded-lg shadow-lg p-6 border border-gray-100 w-full max-w-md">
         <LoginForm returnTo={returnTo} />
       </div>
-      <div className="mt-4 text-gray-600">
-        Need to create a profile?{" "}
-        <Link
-          to={`/create-profile?returnTo=${encodeURIComponent(returnTo)}`}
-          className="text-[#261FB3] hover:text-[#161179] hover:underline transition-colors duration-300"
-        >
-          Create Profile
-        </Link>
-      </div>
+      
     </div>
   );
 }

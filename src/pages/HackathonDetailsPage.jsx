@@ -23,6 +23,27 @@ function HackathonDetailsPage() {
   const { hackathonId } = useParams();
   const { currentUser } = useAuth();
 
+  const fetchUserTeams = async () => {
+    if (!currentUser) return;
+    
+    try {
+      const teamsRef = collection(db, 'teams');
+      const q = query(
+        teamsRef,
+        where('hackathonId', '==', hackathonId),
+        where('members', 'array-contains', currentUser.uid)
+      );
+      const querySnapshot = await getDocs(q);
+      const teams = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setUserTeams(teams);
+    } catch (error) {
+      console.error('Error fetching user teams:', error);
+    }
+  };
+
   useEffect(() => {
     async function fetchHackathonDetails() {
       setLoading(true);

@@ -13,14 +13,18 @@ import ProfilesPage from "./pages/ProfilesPage";
 import TeamDetailPage from "./pages/TeamDetailPage";
 import ProfileSettingsPage from "./pages/ProfileSettingsPage"; // Import ProfileSettingsPage
 import TeamJoinRequestsPage from "./pages/TeamJoinRequestsPage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import { useAuth, AuthProvider } from "./contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 function AppContent() {
   const { currentUser, logout } = useAuth();
+  const navigate = useNavigate();
 
   async function handleLogout() {
     try {
       await logout();
+      navigate('/'); // Redirect to landing page after logout
     } catch (error) {
       console.error("Failed to logout", error);
       alert("Failed to logout");
@@ -31,33 +35,38 @@ function AppContent() {
     <div className="min-h-screen bg-gray-50">
       <nav className="bg-[#261FB3] p-4 text-white shadow-md">
         <div className="container mx-auto flex justify-between items-center">
-          <Link to="/" className="text-xl font-bold">
+          <Link to="/" className="text-xl font-bold hover:text-[#FBE4D6] transition-colors duration-300">
             Hackathon Teammate Finder
           </Link>
-          <div className="flex items-center">
+          <div className="flex items-center space-x-6">
             <Link
               to="/hackathons"
-              className="text-white hover:text-[#FBE4D6] font-medium mr-4 transition-colors duration-300"
+              className="text-white hover:text-[#FBE4D6] font-medium transition-colors duration-300"
             >
-              Hackathons
+              Discover Hackathons
             </Link>
-            {currentUser ? ( // If user is logged in: Show profile and logout
+            {currentUser ? (
               <>
                 <Link
-                  to={`/profile/${currentUser.uid}`}
-                  className="text-white hover:text-[#FBE4D6] font-medium mr-4 transition-colors duration-300"
+                  to="/profiles"
+                  className="text-white hover:text-[#FBE4D6] font-medium transition-colors duration-300"
                 >
-                  Profile
+                  Browse Profiles
+                </Link>
+                <Link
+                  to={`/profile/${currentUser.uid}`}
+                  className="text-white hover:text-[#FBE4D6] font-medium transition-colors duration-300"
+                >
+                  My Profile
                 </Link>
                 <button
                   onClick={handleLogout}
-                  className="bg-[#161179] hover:bg-[#0C0950] text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition-colors duration-300"
+                  className="bg-[#161179] hover:bg-[#0C0950] text-white font-medium py-2 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FBE4D6] transition-all duration-300"
                 >
-                  Log Out
+                  Sign Out
                 </button>
               </>
-            ) : // If user is not logged in: Navigation is handled by LandingPage
-            null}
+            ) : null}
           </div>
         </div>
       </nav>
@@ -71,6 +80,7 @@ function AppContent() {
         <Route path="/profile/:userId" element={<ProfileDetailsPage />} />
         <Route path="/profiles" element={<ProfilesPage />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route
           path="/settings"
           element={currentUser ? <ProfileSettingsPage /> : <LoginPage />}
