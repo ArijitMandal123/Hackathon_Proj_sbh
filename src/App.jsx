@@ -4,7 +4,7 @@ import HomePage from "./pages/HomePage";
 import CreateProfilePage from "./pages/CreateProfilePage";
 import LoginPage from "./pages/LoginPage";
 import LandingPage from "./pages/LandingPage"; // Import LandingPage
-import ProfileDetailsPage from "./pages/ProfileDetailsPage";
+import ProfilePage from "./pages/ProfilePage";
 import HackathonListingsPage from "./pages/HackathonListingsPage";
 import HackathonDetailsPage from "./pages/HackathonDetailsPage";
 import AddHackathonPage from "./pages/AddHackathonPage"; // Import AddHackathonPage
@@ -77,7 +77,7 @@ function AppContent() {
           element={currentUser ? <HomePage /> : <LandingPage />}
         />
         <Route path="/create-profile" element={<CreateProfilePage />} />
-        <Route path="/profile/:userId" element={<ProfileDetailsPage />} />
+        <Route path="/profile/:userId" element={<ProfilePage />} />
         <Route path="/profiles" element={<ProfilesPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
