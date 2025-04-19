@@ -1,17 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { getProfilePicture, calculateGithubExperienceLevel } from '../utils/githubUtils';
 import { useAuth } from '../contexts/AuthContext';
+import ReviewProfile from './ReviewProfile';
 
-function ProfileDetailsPage() {
+function ProfilePage() {
     const [profile, setProfile] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [profilePicture, setProfilePicture] = useState(null);
     const [githubExperience, setGithubExperience] = useState(null);
+    const [showReview, setShowReview] = useState(false);
     const { userId } = useParams();
+    const { currentUser } = useAuth();
 
     useEffect(() => {
         async function fetchProfile() {
@@ -73,44 +76,98 @@ function ProfileDetailsPage() {
         );
     }
 
+    // Extract GitHub username from GitHub URL
+    const githubUsername = profile.github ? profile.github.split('/').pop() : null;
+
     return (
         <div className="container mx-auto px-4 py-8">
-            <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden">
-                {/* Header Section */}
-                <div className="bg-[#261FB3] text-white p-6">
-                    <div className="flex items-center">
-                        <div className="w-24 h-24 rounded-full overflow-hidden mr-6 border-4 border-[#FBE4D6]">
-                            {profilePicture ? (
-                                <img 
-                                    src={profilePicture} 
-                                    alt={`${profile.name}'s profile`} 
-                                    className="w-full h-full object-cover"
-                                />
-                            ) : (
-                                <div className="w-full h-full bg-gray-300 flex items-center justify-center">
-                                    <span className="text-gray-500 text-2xl">?</span>
-                                </div>
-                            )}
+            <div className="max-w-4xl mx-auto">
+                {/* Profile Card */}
+                <div className="bg-white rounded-lg shadow-lg overflow-hidden mb-8">
+                    {/* Header Section */}
+                    <div className="bg-[#261FB3] text-white p-6">
+                        <div className="flex items-center">
+                            <div className="w-24 h-24 rounded-full overflow-hidden mr-6 border-4 border-[#FBE4D6]">
+                                {profilePicture ? (
+                                    <img 
+                                        src={profilePicture} 
+                                        alt={`${profile.name}'s profile`} 
+                                        className="w-full h-full object-cover"
+                                    />
+                                ) : (
+                                    <div className="w-full h-full bg-gray-300 flex items-center justify-center">
+                                        <span className="text-gray-500 text-2xl">?</span>
+                                    </div>
+                                )}
+                            </div>
+                            <div>
+                                <h1 className="text-3xl font-bold">{profile.name}</h1>
+                                <p className="text-[#FBE4D6]">{profile.role}</p>
+                                {githubExperience && (
+                                    <span className={`inline-block px-3 py-1 text-sm rounded-full mt-2 ${
+                                        githubExperience === 'Pro' ? 'bg-[#FBE4D6] text-[#0C0950]' :
+                                        githubExperience === 'Intermediate' ? 'bg-[#161179] text-white' :
+                                        'bg-gray-100 text-gray-800'
+                                    }`}>
+                                        GitHub Experience: {githubExperience}
+                                    </span>
+                                )}
+                            </div>
                         </div>
-                        <div>
-                            <h1 className="text-3xl font-bold">{profile.name}</h1>
-                            <p className="text-[#FBE4D6]">{profile.role}</p>
-                            {githubExperience && (
-                                <span className={`inline-block px-3 py-1 text-sm rounded-full mt-2 ${
-                                    githubExperience === 'Pro' ? 'bg-[#FBE4D6] text-[#0C0950]' :
-                                    githubExperience === 'Intermediate' ? 'bg-[#161179] text-white' :
-                                    'bg-gray-100 text-gray-800'
-                                }`}>
-                                    GitHub Experience: {githubExperience}
-                                </span>
-                            )}
+                    </div>
+
+                    {/* Stats Section */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-6 bg-gray-50">
+                        <div className="text-center">
+                            <p className="text-2xl font-bold text-[#261FB3]">{profile.points || 0}</p>
+                            <p className="text-sm text-gray-600">Points</p>
                         </div>
+                        <div className="text-center">
+                            <p className="text-2xl font-bold text-[#261FB3]">{profile.totalProjects || 0}</p>
+                            <p className="text-sm text-gray-600">Projects</p>
+                        </div>
+                        <div className="text-center">
+                            <p className="text-2xl font-bold text-[#261FB3]">{profile.contributions || 0}</p>
+                            <p className="text-sm text-gray-600">Contributions</p>
+                        </div>
+                        <div className="text-center">
+                            <p className="text-2xl font-bold text-[#261FB3]">
+                                {new Date(profile.createdAt || new Date()).toLocaleDateString()}
+                            </p>
+                            <p className="text-sm text-gray-600">Member Since</p>
+                        </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="p-6 border-t border-gray-200">
+                        <button
+                            onClick={() => setShowReview(!showReview)}
+                            className="bg-[#261FB3] text-white px-6 py-2 rounded-lg hover:bg-[#161179] transition-colors"
+                        >
+                            {showReview ? 'Hide Review' : 'Review Profile'}
+                        </button>
                     </div>
                 </div>
 
-                <div className="p-6">
-                    {/* Basic Information */}
-                    <section className="mb-8">
+                {/* GitHub Profile Review Section */}
+                {showReview && githubUsername && (
+                    <div className="bg-white rounded-lg shadow-lg overflow-hidden mb-8">
+                        <div className="p-6">
+                            <h2 className="text-2xl font-semibold mb-4 text-[#0C0950]">GitHub Profile Analysis</h2>
+                            <ReviewProfile 
+                                username={githubUsername}
+                                userId={userId}
+                                onPointsUpdate={(points) => {
+                                    setProfile(prev => ({ ...prev, points }));
+                                }}
+                            />
+                        </div>
+                    </div>
+                )}
+
+                {/* Basic Information */}
+                <div className="bg-white rounded-lg shadow-lg overflow-hidden mb-8">
+                    <div className="p-6">
                         <h2 className="text-2xl font-semibold mb-4 text-[#0C0950]">Basic Information</h2>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="bg-gray-50 p-4 rounded border border-gray-100">
@@ -130,10 +187,12 @@ function ProfileDetailsPage() {
                                 <p className="font-medium text-[#161179]">{profile.timezone}</p>
                             </div>
                         </div>
-                    </section>
+                    </div>
+                </div>
 
-                    {/* Technical Skills */}
-                    <section className="mb-8">
+                {/* Technical Skills */}
+                <div className="bg-white rounded-lg shadow-lg overflow-hidden mb-8">
+                    <div className="p-6">
                         <h2 className="text-2xl font-semibold mb-4 text-[#0C0950]">Technical Skills</h2>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="bg-gray-50 p-4 rounded border border-gray-100">
@@ -157,10 +216,12 @@ function ProfileDetailsPage() {
                                 </div>
                             </div>
                         </div>
-                    </section>
+                    </div>
+                </div>
 
-                    {/* Work Preferences */}
-                    <section className="mb-8">
+                {/* Work Preferences */}
+                <div className="bg-white rounded-lg shadow-lg overflow-hidden mb-8">
+                    <div className="p-6">
                         <h2 className="text-2xl font-semibold mb-4 text-[#0C0950]">Work Preferences</h2>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="bg-gray-50 p-4 rounded border border-gray-100">
@@ -180,10 +241,12 @@ function ProfileDetailsPage() {
                                 <p className="font-medium text-[#161179]">{profile.teamSize}</p>
                             </div>
                         </div>
-                    </section>
+                    </div>
+                </div>
 
-                    {/* Project Interests */}
-                    <section className="mb-8">
+                {/* Project Interests */}
+                <div className="bg-white rounded-lg shadow-lg overflow-hidden mb-8">
+                    <div className="p-6">
                         <h2 className="text-2xl font-semibold mb-4 text-[#0C0950]">Project Interests</h2>
                         <div className="bg-gray-50 p-4 rounded border border-gray-100">
                             <div className="flex flex-wrap gap-2">
@@ -194,19 +257,12 @@ function ProfileDetailsPage() {
                                 ))}
                             </div>
                         </div>
-                    </section>
+                    </div>
+                </div>
 
-                    {/* Additional Information */}
-                    <section className="mb-8">
-                        <h2 className="text-2xl font-semibold mb-4 text-[#0C0950]">Additional Information</h2>
-                        <div className="bg-gray-50 p-4 rounded border border-gray-100">
-                            <p className="text-gray-600">Additional Preferences</p>
-                            <p className="mt-2 text-[#161179]">{profile.preferences || 'No additional preferences specified'}</p>
-                        </div>
-                    </section>
-
-                    {/* Links */}
-                    <section className="mb-8">
+                {/* Links */}
+                <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+                    <div className="p-6">
                         <h2 className="text-2xl font-semibold mb-4 text-[#0C0950]">Links</h2>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             {profile.portfolio && (
@@ -231,11 +287,11 @@ function ProfileDetailsPage() {
                                 </a>
                             )}
                         </div>
-                    </section>
+                    </div>
                 </div>
             </div>
         </div>
     );
 }
 
-export default ProfileDetailsPage; 
+export default ProfilePage; 

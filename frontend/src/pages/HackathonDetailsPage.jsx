@@ -23,6 +23,27 @@ function HackathonDetailsPage() {
   const { hackathonId } = useParams();
   const { currentUser } = useAuth();
 
+  const fetchUserTeams = async () => {
+    if (!currentUser) return;
+    
+    try {
+      const teamsRef = collection(db, 'teams');
+      const q = query(
+        teamsRef,
+        where('hackathonId', '==', hackathonId),
+        where('members', 'array-contains', currentUser.uid)
+      );
+      const querySnapshot = await getDocs(q);
+      const teams = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setUserTeams(teams);
+    } catch (error) {
+      console.error('Error fetching user teams:', error);
+    }
+  };
+
   useEffect(() => {
     async function fetchHackathonDetails() {
       setLoading(true);
@@ -407,9 +428,9 @@ function HackathonDetailsPage() {
           <div className="border-t border-gray-200 pt-8">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold text-[#0C0950]">Teams</h2>
-              {currentUser && isHackathonActive() && (
+              {currentUser && !isUserInTeam && isHackathonActive() && (
                 <div className="flex gap-4">
-                  {!showTeamForm && userTeams.length === 0 && (
+                  {!showTeamForm && (
                     <button
                       onClick={() => setShowTeamForm(true)}
                       className="bg-[#261FB3] text-white px-4 py-2 rounded hover:bg-[#161179] transition-colors"

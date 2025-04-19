@@ -8,6 +8,7 @@ import {
   where,
   getDocs,
   updateDoc,
+  addDoc,
 } from "firebase/firestore";
 import { db } from "../firebase";
 import { useAuth } from "../contexts/AuthContext";
@@ -24,6 +25,7 @@ function TeamDetailPage() {
   const [isUserInTeam, setIsUserInTeam] = useState(false);
   const [isJoiningTeam, setIsJoiningTeam] = useState(false);
   const [joinSuccess, setJoinSuccess] = useState(false);
+  const [userRole, setUserRole] = useState(null);
 
   // Add helper function for logging team capacity
   const logTeamCapacity = (team, stage = "checking") => {
@@ -49,15 +51,9 @@ function TeamDetailPage() {
   };
 
   // Add function to handle joining a team directly from the team details page
-  const handleJoinTeam = async (vacantPosition) => {
+  const handleJoinTeam = async () => {
     if (!currentUser) {
-      // Redirect to login with return URL
       navigate(`/login?returnTo=/team/${teamId}`);
-      return;
-    }
-
-    if (isUserInTeam) {
-      setError("You are already a member of this team");
       return;
     }
 
@@ -65,153 +61,61 @@ function TeamDetailPage() {
     setError("");
 
     try {
-      // Check if user is already in any team for this hackathon
-      if (hackathon) {
-        const existingTeamsQuery = query(
-          collection(db, "teams"),
-          where("hackathonId", "==", hackathon.id)
-        );
-        const existingTeamsSnapshot = await getDocs(existingTeamsQuery);
-
-        const userInOtherTeam = existingTeamsSnapshot.docs
-          .map((doc) => ({ id: doc.id, ...doc.data() }))
-          .some(
-            (team) =>
-              team.id !== teamId && // Not current team
-              team.members &&
-              team.members.some(
-                (member) =>
-                  member.userId === currentUser.uid && !member.isDeleted
-              )
-          );
-
-        if (userInOtherTeam) {
-          throw new Error(
-            "You are already a member of another team in this hackathon. You can only join one team per hackathon."
-          );
-        }
-      }
-
-      // Get fresh team data to ensure we have the latest state
-      const teamRef = doc(db, "teams", teamId);
-      const freshTeamSnapshot = await getDoc(teamRef);
-      if (!freshTeamSnapshot.exists()) {
-        throw new Error("Team not found");
-      }
-
-      const freshTeam = freshTeamSnapshot.data();
-      freshTeam.id = teamId;
-
-      // Log team capacity before processing
-      const { activeMembers, maxMembers, hasVacancies } = logTeamCapacity(
-        freshTeam,
-        "before join"
+      // Check if user is already in a team for this hackathon
+      const teamsQuery = query(
+        collection(db, "teams"),
+        where("hackathonId", "==", team.hackathonId)
       );
+      const teamsSnapshot = await getDocs(teamsQuery);
 
-      // Check team capacity using the values from logging
-      if (!hasVacancies) {
+      const userInTeam = teamsSnapshot.docs
+        .map((doc) => ({ id: doc.id, ...doc.data() }))
+        .some(
+          (team) =>
+            team.members &&
+            team.members.some(
+              (member) => member.userId === currentUser.uid && !member.isDeleted
+            )
+        );
+
+      if (userInTeam) {
         throw new Error(
-          `Team is full. No more members can join. (${activeMembers.length}/${maxMembers})`
+          "You are already a member of a team in this hackathon. You can only join one team per hackathon."
         );
       }
 
-      // Check if the user is already a member (even if deleted)
-      const existingMember =
-        freshTeam.members &&
-        freshTeam.members.find((member) => member.userId === currentUser.uid);
-
-      if (existingMember) {
-        if (!existingMember.isDeleted) {
-          throw new Error("You are already a member of this team");
-        } else {
-          // Reactivate the previously deleted membership
-          const updatedMembers = freshTeam.members.map((member) => {
-            if (member.userId === currentUser.uid) {
-              return {
-                ...member,
-                isDeleted: false,
-                role: "member", // Reset to member role
-                joinedAt: new Date().toISOString(),
-                rejoined: true,
-              };
-            }
-            return member;
-          });
-
-          await updateDoc(teamRef, {
-            members: updatedMembers,
-          });
-
-          // Log the team after reactivation
-          logTeamCapacity(
-            { ...freshTeam, members: updatedMembers },
-            "after reactivation"
-          );
-
-          setJoinSuccess(true);
-          setTimeout(() => {
-            fetchTeamData();
-            setJoinSuccess(false);
-          }, 2000);
-          return;
-        }
+      // Check if team has space
+      const activeMembers = team.members.filter(member => !member.isDeleted);
+      if (activeMembers.length >= team.maxMembers) {
+        throw new Error("Team is already at maximum capacity");
       }
 
-      // Now check for vacantPosition
-      if (vacantPosition) {
-        // Join using a vacant position (previously deleted user)
-        const updatedMembers = freshTeam.members.map((member) => {
-          if (member.userId === vacantPosition.userId && member.isDeleted) {
-            return {
-              userId: currentUser.uid,
-              role: "member",
-              joinedAt: new Date().toISOString(),
-              isDeleted: false,
-            };
-          }
-          return member;
-        });
-
-        await updateDoc(teamRef, {
-          members: updatedMembers,
-        });
-
-        // Log after joining with vacant position
-        logTeamCapacity(
-          { ...freshTeam, members: updatedMembers },
-          "after join (vacant)"
-        );
-      } else {
-        // Add as a new member - no need to check capacity again, we already did above
-        const updatedMembers = [
-          ...freshTeam.members,
-          {
-            userId: currentUser.uid,
-            role: "member",
-            joinedAt: new Date().toISOString(),
-            isDeleted: false,
-          },
-        ];
-
-        await updateDoc(teamRef, {
-          members: updatedMembers,
-        });
-
-        // Log after joining as new member
-        logTeamCapacity(
-          { ...freshTeam, members: updatedMembers },
-          "after join (new)"
-        );
+      // Check if there's already a pending join request from this user
+      const existingRequestQuery = query(
+        collection(db, "joinRequests"),
+        where("teamId", "==", teamId),
+        where("userId", "==", currentUser.uid),
+        where("status", "==", "pending")
+      );
+      const existingRequestSnapshot = await getDocs(existingRequestQuery);
+      
+      if (!existingRequestSnapshot.empty) {
+        throw new Error("You already have a pending join request for this team");
       }
 
-      // Show success message and refresh data
+      // Create a new join request
+      await addDoc(collection(db, "joinRequests"), {
+        teamId,
+        userId: currentUser.uid,
+        status: "pending",
+        createdAt: new Date().toISOString(),
+      });
+
+      // Show success message
       setJoinSuccess(true);
-
-      // Refresh team data after a short delay
       setTimeout(() => {
-        fetchTeamData();
         setJoinSuccess(false);
-      }, 2000);
+      }, 3000);
     } catch (err) {
       console.error("Error joining team:", err);
       setError(err.message || "Failed to join team");
@@ -384,13 +288,11 @@ function TeamDetailPage() {
                 !isUserInTeam &&
                 members.filter((m) => m.exists).length < team.maxMembers && (
                   <button
-                    onClick={() =>
-                      handleJoinTeam(members.find((m) => !m.exists))
-                    }
+                    onClick={handleJoinTeam}
                     disabled={isJoiningTeam}
                     className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm transition-colors disabled:opacity-50"
                   >
-                    {isJoiningTeam ? "Joining..." : "Join This Team"}
+                    {isJoiningTeam ? "Sending Request..." : "Apply to Join"}
                   </button>
                 )}
 
@@ -410,7 +312,7 @@ function TeamDetailPage() {
 
           {joinSuccess && (
             <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
-              You've successfully joined the team!
+              Join request sent successfully! Please wait for the team leader to review your request.
             </div>
           )}
 
@@ -439,16 +341,9 @@ function TeamDetailPage() {
             </div>
           )}
 
-          <div className="mb-6">
-            <div className="flex justify-between items-center mb-3">
-              <h2 className="text-xl font-semibold text-[#0C0950]">
-                Team Members
-              </h2>
-              <div className="text-sm text-gray-600">
-                {members.filter((m) => m.exists).length} active /{" "}
-                {members.length} total
-              </div>
-            </div>
+          <div className="mt-8">
+            <h2 className="text-2xl font-bold text-[#0C0950] mb-4">Team Members</h2>
+            
             <div className="space-y-4">
               {members.map((member, index) => (
                 <div
@@ -521,11 +416,11 @@ function TeamDetailPage() {
                         <div className="mt-2">
                           {!member.exists && (
                             <button
-                              onClick={() => handleJoinTeam(member)}
+                              onClick={handleJoinTeam}
                               disabled={isJoiningTeam}
                               className="text-sm bg-green-600 hover:bg-green-700 text-white font-medium px-3 py-1 rounded transition-colors disabled:opacity-50"
                             >
-                              {isJoiningTeam ? "Joining..." : "Join Now"}
+                              {isJoiningTeam ? "Sending Request..." : "Apply to Join"}
                             </button>
                           )}
 
@@ -554,6 +449,33 @@ function TeamDetailPage() {
                 </div>
               ))}
             </div>
+
+            {/* Join Team Button */}
+            {currentUser && !isUserInTeam && (
+              <div className="mt-6 flex justify-center">
+                <button
+                  onClick={handleJoinTeam}
+                  disabled={isJoiningTeam}
+                  className={`bg-[#261FB3] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#161179] transition-colors ${
+                    isJoiningTeam ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
+                >
+                  {isJoiningTeam ? "Sending Request..." : "Apply to Join"}
+                </button>
+              </div>
+            )}
+
+            {/* Manage Requests Button for Leaders */}
+            {isUserInTeam && userRole === "leader" && (
+              <div className="mt-6 flex justify-center">
+                <Link
+                  to={`/team/${teamId}/requests`}
+                  className="bg-[#FBE4D6] text-[#0C0950] px-6 py-3 rounded-lg font-medium hover:bg-[#f5d5c3] transition-colors"
+                >
+                  Manage Join Requests
+                </Link>
+              </div>
+            )}
           </div>
 
           {team.projectLinks && Object.keys(team.projectLinks).length > 0 && (
